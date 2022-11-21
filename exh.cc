@@ -4,9 +4,6 @@
 #include <iostream>
 #include <vector>
 
-// pq minima penalitzacio = -1?
-// explicacio principi i final calcul penalitzacions
-
 using namespace std;
 
 struct Data {
@@ -24,13 +21,10 @@ void inicialitzar_dades(Data& dades, int C, int M, int K)
     dades.C = C;
     dades.M = M;
     dades.K = K;
-    vector<int> v(M);
-    dades.capacitat_finestra = v;
-    dades.mida_finestra = v;
-    vector<int> u(K);
-    dades.produccio = u;
-    vector<vector<bool>> mat(K, vector<bool>(M, false));
-    dades.classes = mat;
+    dades.capacitat_finestra = vector<int>(M);
+    dades.mida_finestra = vector<int>(M);
+    dades.produccio = vector<int>(K);
+    dades.classes = vector<vector<bool>>(K, vector<bool>(M, false));
 }
 
 // Funció que llegeix les dades d'entrada i retorna una variable de tipus Data
@@ -179,8 +173,7 @@ void permutacions_rec(const Data& dades, int n, vector<int>& sol_parcial, vector
             if (no_produits[i] > 0) {
                 sol_parcial[n] = i;
                 --no_produits[i];
-                if (min_penalitzacio == -1 or calcular_cost_total(dades, sol_parcial, n) < min_penalitzacio)
-                {
+                if (min_penalitzacio == -1 or calcular_cost_total(dades, sol_parcial, n) < min_penalitzacio) {
                     permutacions_rec(dades, n + 1, sol_parcial, no_produits, min_penalitzacio, argv, t0);
                 }
                 ++no_produits[i];
