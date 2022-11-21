@@ -90,54 +90,45 @@ void escriure_resultat(const vector<int>& sol, int cost, double temps, char** ar
     out.close();
 }
 
-// Funció que calcula la penalització de la permutació associada a una millora concreta
 int calcular_cost_millora(const Data& dades, int millora, vector<bool> cotxes_a_millorar)
 {
-    int mida = dades.mida_finestra[millora];
-    int capacitat = dades.capacitat_finestra[millora];
-    // final = inici + mida
-    int penalitzacions = 0;
-    int inici = 0;
-    int final = capacitat;
-    int n = cotxes_a_millorar.size();
-    if (n <= capacitat)
-        return 0;
-    while ((final < mida - 1) and (final < n)) {
-        int contador = 0;
-        for (int i = inici; i <= final; ++i) {
-            if (cotxes_a_millorar[i])
-                ++contador;
-        }
-        if (contador > capacitat) {
-            penalitzacions += contador - capacitat;
-        }
-        ++final;
-    }
-    while (final < n) {
-        int contador = 0;
-        for (int i = inici; i <= final; ++i) {
-            if (cotxes_a_millorar[i])
-                ++contador;
-        }
-        if (contador > capacitat) {
-            penalitzacions += contador - capacitat;
-        }
-        ++inici;
-        ++final;
-    }
-    while ((final - inici >= capacitat) and (final < n)) {
-        int contador = 0;
-        for (int i = inici; i <= final; ++i) {
-            if (cotxes_a_millorar[i])
-                ++contador;
-        }
-        if (contador > capacitat) {
-            penalitzacions += contador - capacitat;
-        }
-        ++inici;
-    }
-    return penalitzacions;
+  int mida = dades.mida_finestra[millora];
+  int capacitat = dades.capacitat_finestra[millora];
+  int n = cotxes_a_millorar.size();
+  // final = inici + mida
+  int penalitzacions = 0;
+  if (n <= capacitat)
+      return 0;
+  if (n < mida) {
+      int inici = 0;
+      int final = n - 1;
+      for (int i = inici; i < final; ++i) {
+          if (cotxes_a_millorar[i])
+              ++contador;
+      }
+      if (contador > capacitat)
+          return contador - capacitat;
+      return 0;
+  }
+  if (n == dades.C) {
+      int inici = n - mida;
+      int final = n - 1;
+      int penalitzacio = 0;
+      while (final - inici >= capacitat) {
+          int contador = 0;
+          for (int i = inici; i <= final; ++i) {
+              if (cotxes_a_millorar[i])
+                  ++contador;
+          }
+          if (contador > capacitat) {
+              penalitzacions += contador - capacitat;
+          }
+          ++inici;
+      }
+      return penalitzacio;
+  }
 }
+
 
 // Funció que calcula la penalització total de la permutació, sumant les penalitzacions associades a cadascuna de les millores
 int calcular_cost_total(const Data& dades, const vector<int>& sol, int n)
