@@ -6,6 +6,8 @@
 
 using namespace std;
 
+const int infi = 100000000;
+
 struct Data {
     int C;                              // nombre de cotxes
     int M;                              // nombre de millores
@@ -13,7 +15,7 @@ struct Data {
     vector<int> capacitat_finestra;     // v[i] indica el màxim nombre de cotxes que poden requerir la millora [i] en un conjunt de cotxes consecutius
     vector<int> mida_finestra;          // v[i] indica la mida del conjunt de cotxes consecutius per a la millora [i]
     vector<int> produccio;              // v[i] indica els cotxes que s'han de produïr de la classe [i]
-    vector<vector<bool>> classes;       // v[i][j] indica si la classe [i] requereix o no la millora [j]
+    vector<vector<int>> classes;       // v[i][j] indica si la classe [i] requereix o no la millora [j]
 };
 
 void inicialitzar_dades(Data& dades, int C, int M, int K)
@@ -24,7 +26,7 @@ void inicialitzar_dades(Data& dades, int C, int M, int K)
     dades.capacitat_finestra = vector<int> (M);
     dades.mida_finestra = vector<int> (M);
     dades.produccio = vector<int> (K);
-    dades.classes = vector<vector<bool>> (K, vector<bool>(M, false));
+    dades.classes = vector<vector<int>> (K, vector<int>(M, false));
 }
 
 
@@ -49,11 +51,10 @@ Data llegir_dades(char** argv)
         in >> aux;
         in >> dades.produccio[i];
         for (int j = 0; j < M; ++j) {
-            in >> aux;
-            if (aux == 1)
-                dades.classes[i][j] = true;
+            in >> dades.classes[i][j];
         }
     }
+    in.close();
     return dades;
 }
 
@@ -72,7 +73,7 @@ void escriure_resultat(const vector<int>& sol, int cost, double temps, char** ar
 }
 
 
-int calcular_cost_millora(const Data& dades, int millora, vector<bool> cotxes_a_millorar)
+int calcular_cost_millora(const Data& dades, int millora, const vector<int>& cotxes_a_millorar)
 {
     int mida = dades.mida_finestra[millora];
     int capacitat = dades.capacitat_finestra[millora];
@@ -90,7 +91,7 @@ int calcular_cost_millora(const Data& dades, int millora, vector<bool> cotxes_a_
     int penalitzacions = 0;
     int contador = 0;
     for (int i = inici; i <= final; ++i) {
-        if (cotxes_a_millorar[i])
+        if (cotxes_a_millorar[i] == 1)
             ++contador;
     }
     if (contador > capacitat)
@@ -101,7 +102,7 @@ int calcular_cost_millora(const Data& dades, int millora, vector<bool> cotxes_a_
         while (final - inici >= capacitat) {
             contador = 0;
             for (int i = inici; i <= final; ++i) {
-                if (cotxes_a_millorar[i])
+                if (cotxes_a_millorar[i] == 1)
                     ++contador;
             }
             if (contador > capacitat) {
@@ -117,11 +118,11 @@ int calcular_cost_millora(const Data& dades, int millora, vector<bool> cotxes_a_
 int calcular_cost_total(const Data& dades, const vector<int>& sol, int n)
 {
     // Vector que per a cada millora indica quins cotxes de la permutació requereixen aquesta millora
-    vector<bool> cotxes_a_millorar(n + 1);
+    vector<int> cotxes_a_millorar(n + 1);
     int penalitzacio_total = 0;
     for (int i = 0; i < dades.M; ++i) {
         for (int j = 0; j < n + 1; ++j) {
-            if (dades.classes[sol[j]][i])
+            if (dades.classes[sol[j]][i] == 1)
                 cotxes_a_millorar[j] = true;
             else
                 cotxes_a_millorar[j] = false;
@@ -135,21 +136,21 @@ int calcular_cost_total(const Data& dades, const vector<int>& sol, int n)
 void permutacions_rec(const Data& dades, int n, vector<int>& sol_parcial, int cost_parcial, vector<int>& no_produits, int& min_penalitzacio, char** argv, unsigned t0)
 {
     if (n == dades.C) {
-        if (min_penalitzacio == -1 or min_penalitzacio > cost_parcial) {
+        if (cost_parcial < min_penalitzacio) {
+            // Calculem el temps que ens ha tardat en trobar la solucio:
             unsigned t1 = clock();
             double temps = (double(t1 - t0) / CLOCKS_PER_SEC);
+            // Escrivim el resultat en el doc de sortida
             escriure_resultat(sol_parcial, cost_parcial, temps, argv);
             min_penalitzacio = cost_parcial;
-            cout << "resultat: " << cost_parcial << endl;
         }
-
     } else {
         for (int i = 0; i < dades.K; ++i) {
             if (no_produits[i] > 0) {
                 sol_parcial[n] = i;
                 --no_produits[i];
                 int cost_parcial_aux = cost_parcial + calcular_cost_total(dades, sol_parcial, n);
-                if (min_penalitzacio == -1 or cost_parcial_aux < min_penalitzacio) {
+                if (cost_parcial_aux < min_penalitzacio) {
                     permutacions_rec(dades, n + 1, sol_parcial, cost_parcial_aux, no_produits, min_penalitzacio, argv, t0);
                 }
                 ++no_produits[i];
@@ -162,9 +163,9 @@ void permutacions_rec(const Data& dades, int n, vector<int>& sol_parcial, int co
 void permutacions(const Data& dades, char** argv, unsigned t0)
 {
     vector<int> sol_parcial(dades.C);
-    // Per controlar quants cotxes ens queden de cada classe a posar en la permutació, utilitzem el següent vector:
+    // Per controlar quants cotxes ens queden de cada classe a posar en la permutació, utilitzem el següent vector. La posició produits[i] idica quants cotxes de i encara podem posar.
     vector<int> no_produits = dades.produccio;
-    int min_penalitzacio = -1;
+    int min_penalitzacio = infi;
     permutacions_rec(dades, 0, sol_parcial, 0, no_produits, min_penalitzacio, argv, t0);
 }
 
