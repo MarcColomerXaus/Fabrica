@@ -35,7 +35,7 @@ void inicialitzar_dades(int C, int M, int K)
 
 
 // Funció que llegeix les dades d'entrada, les guarda en  una variable de tipus Data i la retorn.
-void llegir_dades(vector<string> argv)
+void llegir_dades(char** argv)
 {
     ifstream in(argv[1]);
     int C, M, K;
@@ -62,7 +62,7 @@ void llegir_dades(vector<string> argv)
 
 
 // Funció que escriu un resultat del problema en el arxiu de sortida
-void escriure_solucio(const vector<int>& sol, int cost, double temps, vector<string> argv)
+void escriure_solucio(const vector<int>& sol, int cost, double temps, char** argv)
 {
     ofstream out(argv[2]);
     out << cost << ' ' << fixed << setprecision(1) << temps << endl;
@@ -133,7 +133,7 @@ int calcular_penalitzacio_total(const vector<int>& sol)
             else
                 cotxes_a_millorar[j] = false;
         }
-        penalitzacions += calcular_penalitzacio_millora(i, cotxes_a_millorar);
+        penalitzacions += calcular_penalitzacio_millora_total(i, cotxes_a_millorar);
     }
     return penalitzacions;
 }
@@ -200,34 +200,31 @@ int calcular_penalitzacio_afegida(const vector<int>& sol, int n)
 
 
 
-int determinar_longitud_llista_candidats() {
-    // Generar numero aleatori entre dades.C i dades.C/2 ??
-}
-
 typedef pair<int, int> parella;
 
 vector<int> construir_solucio_aleatoria() {
     vector<int> solucio(dades.C);
     vector<int> no_usats = dades.produccio;
     // Agafem una alpha aleatòria entre 1 i dades.K:
-    alpha = rand() % dades.K + 1;
+    int alpha = rand() % dades.K + 1;
     // Posem el primer número aleatòriament:
     solucio[0] = rand() % dades.K;
     --no_usats[solucio[0]];
     // A continuació posem els altres números restants tenint en compte la penalització afegida:
     for (int i = 1; i < dades.C; ++i) {
+        // Anem posant en la cua de prioritats totes les penalitzacions junt amb les classes (per després triar els millors):
         // Per defecte la cua s'ordena tenint en compte el primer element
         priority_queue<parella, vector<parella>, greater<parella>> candidats;
-        // Anem posant en la cua de prioritats totes les penalitzacions junt amb les classes (per després triar els millors):
         for(int j = 0; j < dades.K; ++j) {
             if (no_usats[j] > 0) {
                 int penalitzacio = calcular_penalitzacio_afegida(solucio, j);
-                candidats.push({penalitzacio, j})
+                candidats.push({penalitzacio, j});
             }
         }
         // Triem un nombre al atzar de la cua entre els alpha primers números:
         int guanyador;
-        if (candidats.size() < alpha) 
+        int num_candidats = candidats.size();
+        if (num_candidats < alpha)
             guanyador = rand() % candidats.size();
         else guanyador = rand() % alpha;
         for(int i = 0; i < guanyador; ++i) {
@@ -246,7 +243,7 @@ vector<vector<int>> trobar_veins(const vector<int>& solucio) {
         for (int j = i; j < dades.C; ++j) {
             if (solucio[i] != solucio[j]) {
                 vector<int> candidat = solucio;
-                swap(candidat[i], candidat[j])
+                swap(candidat[i], candidat[j]);
                 veins.push_back(candidat);
             }
         }
@@ -255,34 +252,30 @@ vector<vector<int>> trobar_veins(const vector<int>& solucio) {
 }
 
 
-void simulated_annealing(const vector<int>& sol_inicial, int& min_penalitzacio, const vector<string>& argv, unsigned t0) {
+void simulated_annealing(const vector<int>& sol_inicial, int& min_penalitzacio, char** argv, unsigned t0) {
     vector<int> x = sol_inicial;
     int penalitzacio_x = calcular_penalitzacio_total(x);
-    int probabilitat =; //calcular prob!!!!!!!!!!!
     while (true) {
-        vector<vector<int>> veins = trobar_veins(sol);
+        vector<vector<int>> veins = trobar_veins(x);
         // Afegim un veí al atzar:
         int guanyador = rand() % veins.size();
         vector<int> y = veins[guanyador];
         int penalitzacio_y = calcular_penalitzacio_total(y);
-        if (y < x) x = y;
-        // Amb prob probabiltat, ens quedem amb el veí:
-        else if (probabilitat > 1) x = y;
-        // Si ens quedem amb el veí llavors hem d'actualitzar la probabilitat!!!!!!!!
+        if (penalitzacio_y < penalitzacio_x) x = y;
+        // Amb una certa probabiltat, ens quedem amb el veí:
+        //else if (probabilitat > 1) x = y;
     }
-
     if (penalitzacio_x < min_penalitzacio) {
         min_penalitzacio = penalitzacio_x;
-        escriure_solucio(x, argv, t0)
-
+        escriure_solucio(x, penalitzacio_x, t0, argv);
     }
 }
 
 
-void metaheuristica(const vector<string>& argv, unsigned t0)
+void metaheuristica(char** argv, unsigned t0)
 {
     int min_penalitzacio = infinit;
-    while (true) {
+    while (true and min_penalitzacio != 0) {
         vector<int> solucio = construir_solucio_aleatoria();
         simulated_annealing(solucio, min_penalitzacio, argv, t0);
     }
