@@ -5,14 +5,12 @@
 #include <vector>
 #include <queue>
 #include <stdlib.h>
+#include <cmath>
 
 using namespace std;
 const int infinit = 100000000;
-typedef pair<int, int> parella;
 
-
-struct Data
-{
+struct Data {
     int C;                              // nombre de cotxes
     int M;                              // nombre de millores
     int K;                              // nombre de classes
@@ -123,7 +121,7 @@ int calcular_penalitzacio_millora_total(int millora, const vector<int>& cotxes_a
     return penalitzacions;
 }
 
-// Funció que donada una solució calcula la penalització total d'aquesta.
+
 int calcular_penalitzacio_total(const vector<int>& sol)
 {
     // Vector que per a cada millora indica quins cotxes de la permutació requereixen aquesta millora
@@ -183,7 +181,7 @@ int calcular_penalitzacio_millora(int millora, const vector<int>& cotxes_a_millo
     return penalitzacions;
 }
 
-// Funció que donada una solució i una posició de la solució calcula les penalitzacions que apareixen en la solució al afegir-hi la posició n.
+
 int calcular_penalitzacio_afegida(const vector<int>& sol, int n)
 {
     // Vector que per a cada millora indica quins cotxes de la permutació requereixen aquesta millora
@@ -202,8 +200,9 @@ int calcular_penalitzacio_afegida(const vector<int>& sol, int n)
 }
 
 
-// Funció que construeix una solució aleatòria tenint en compte les penalitzacions afegides i la probabilitat alpha.
-// FUNCIONA BÉ
+
+typedef pair<int, int> parella;
+
 vector<int> construir_solucio_aleatoria() {
     vector<int> solucio(dades.C);
     vector<int> no_usats = dades.produccio;
@@ -221,7 +220,6 @@ vector<int> construir_solucio_aleatoria() {
             if (no_usats[j] > 0) {
                 int penalitzacio = calcular_penalitzacio_afegida(solucio, j);
                 candidats.push({penalitzacio, j});
-                
             }
         }
         // Triem un nombre al atzar de la cua entre els alpha primers números:
@@ -239,9 +237,7 @@ vector<int> construir_solucio_aleatoria() {
     return solucio;
 }
 
-// Funció que donada una solució retorna un vector amb tots els veïns de la solució, entenent un veí com qualssevol permutació
-// de la solució obtinguda intercanviant dues posicions qualssevols de la solució (si tenen valors diferents).
-// FUNCIONA BÉ
+
 vector<vector<int>> trobar_veins(const vector<int>& solucio) {
     vector<vector<int>> veins;
     for (int i = 0; i < dades.C; ++i) {
@@ -256,37 +252,57 @@ vector<vector<int>> trobar_veins(const vector<int>& solucio) {
     return veins;
 }
 
-
-// FALTA IMPLEMENTAR LO DE LA PROBABILITAT DE BOLTZMAN DISTRIBUTION
-void simulated_annealing(const vector<int>& sol_inicial, int& min_penalitzacio, char** argv, unsigned t0) {
-    vector<int> x = sol_inicial;
-    int penalitzacio_x = calcular_penalitzacio_total(x);
-    while (true) {
-        vector<vector<int>> veins = trobar_veins(x);
-        // Afegim un veí al atzar:
-        int guanyador = rand() % veins.size();
-        vector<int> y = veins[guanyador];
-        int penalitzacio_y = calcular_penalitzacio_total(y);
-        if (penalitzacio_y < penalitzacio_x) {
-            x = y;
-            penalitzacio_x = penalitzacio_y;
-            if (penalitzacio_x < min_penalitzacio)
+void simulated_annealing(const vector<int> &solucio_inicial, int &min_penalitzacio, char **argv, unsigned t0)
+{
+    vector<int> solucio_actual = solucio_inicial;
+    int penalitzacio_actual = calcular_penalitzacio_total(solucio_actual);
+    int T = 100;
+    int canvis_per_pitjor = 0;
+    while (canvis_per_pitjor < dades.C*2)
+    {   
+        // Per no haver de calcular els mateixos veins més d'ún cop:
+        bool canviat = false;
+        vector<vector<int>> veins = trobar_veins(solucio_actual);
+        while (not canviat) 
+        {
+            // Afegim un veí al atzar:
+            int vei_triat = rand() % veins.size();
+            vector<int> nova_solucio = veins[vei_triat];
+            int penalitzacio_nova_solucio = calcular_penalitzacio_total(nova_solucio);
+            if (penalitzacio_nova_solucio < penalitzacio_actual)
             {
-                min_penalitzacio = penalitzacio_x;
-                escriure_solucio(x, penalitzacio_x, t0, argv);
+                canviat = true;
+                solucio_actual = nova_solucio;
+                penalitzacio_actual = penalitzacio_nova_solucio;
+                if (penalitzacio_actual < min_penalitzacio)
+                {
+                    min_penalitzacio = penalitzacio_actual;
+                    unsigned t1 = clock(); // Rellotge que marca el temps de finalització del programa
+                    double temps = (double(t1 - t0) / CLOCKS_PER_SEC);
+                    escriure_solucio(solucio_actual, min_penalitzacio, temps, argv);
+                    cout << min_penalitzacio << endl;
+                }
             }
-        }   
-        // Amb una certa probabiltat, ens quedem amb el veí:
-        //else if (probabilitat > 1) x = y;
+            else
+            {
+                double prob = exp(-(penalitzacio_nova_solucio - penalitzacio_actual) / T);
+                if (rand() % T < prob)
+                {
+                    canviat = true;
+                    ++canvis_per_pitjor;
+                    solucio_actual = nova_solucio;
+                    penalitzacio_actual = penalitzacio_nova_solucio;
+                }
+            }
+        }
     }
-    
 }
 
 
 void metaheuristica(char** argv, unsigned t0)
 {
     int min_penalitzacio = infinit;
-    while (true and min_penalitzacio != 0) {
+    while (min_penalitzacio != 0) {
         vector<int> solucio = construir_solucio_aleatoria();
         simulated_annealing(solucio, min_penalitzacio, argv, t0);
     }
