@@ -280,7 +280,6 @@ void simulated_annealing(const vector<int> &solucio_inicial, int &min_penalitzac
                     unsigned t1 = clock(); // Rellotge que marca el temps de finalització del programa
                     double temps = (double(t1 - t0) / CLOCKS_PER_SEC);
                     escriure_solucio(solucio_actual, min_penalitzacio, temps, argv);
-                    cout << min_penalitzacio << endl;
                 }
             }
             else
