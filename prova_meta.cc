@@ -256,14 +256,14 @@ void simulated_annealing(const vector<int> &solucio_inicial, int &min_penalitzac
 {
     vector<int> solucio_actual = solucio_inicial;
     int penalitzacio_actual = calcular_penalitzacio_total(solucio_actual);
-    int T = 100;
-    int canvis_per_pitjor = 0;
-    while (canvis_per_pitjor < dades.C*2)
-    {   
+    double alpha = 0.95;
+    const double e = 2.718281828;
+    for (double T = 100; T > 0.0000008; T *= alpha) 
+    {
         // Per no haver de calcular els mateixos veins més d'ún cop:
         bool canviat = false;
         vector<vector<int>> veins = trobar_veins(solucio_actual);
-        while (not canviat) 
+        while (not canviat)
         {
             // Afegim un veí al atzar:
             int vei_triat = rand() % veins.size();
@@ -277,6 +277,7 @@ void simulated_annealing(const vector<int> &solucio_inicial, int &min_penalitzac
                 if (penalitzacio_actual < min_penalitzacio)
                 {
                     min_penalitzacio = penalitzacio_actual;
+                    cout << min_penalitzacio << endl;
                     unsigned t1 = clock(); // Rellotge que marca el temps de finalització del programa
                     double temps = (double(t1 - t0) / CLOCKS_PER_SEC);
                     escriure_solucio(solucio_actual, min_penalitzacio, temps, argv);
@@ -284,11 +285,10 @@ void simulated_annealing(const vector<int> &solucio_inicial, int &min_penalitzac
             }
             else
             {
-                double prob = exp(-(penalitzacio_nova_solucio - penalitzacio_actual) / T);
-                if (rand() % T < prob)
+                double prob = pow(e, -(penalitzacio_nova_solucio - penalitzacio_actual) / T); 
+                if ((rand() / (double)RAND_MAX) <= prob)
                 {
                     canviat = true;
-                    ++canvis_per_pitjor;
                     solucio_actual = nova_solucio;
                     penalitzacio_actual = penalitzacio_nova_solucio;
                 }
@@ -304,6 +304,7 @@ void metaheuristica(char** argv, unsigned t0)
     while (min_penalitzacio != 0) {
         vector<int> solucio = construir_solucio_aleatoria();
         simulated_annealing(solucio, min_penalitzacio, argv, t0);
+        
     }
 }
 
