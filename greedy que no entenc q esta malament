@@ -60,6 +60,7 @@ void llegir_dades(char** argv)
     in.close();
 }
 
+
 void escriure_solucio(const vector<int>& sol, int cost, double temps, char** argv)
 {
     ofstream out(argv[2]);
@@ -97,8 +98,9 @@ int calcular_cost_millora(int millora, const vector<int>& cotxes_a_millorar)
     if (contador > capacitat)
         penalitzacions = contador - capacitat;
 
-    if (n == dades.C) { // Si ja hem arribat a l'últim cotxe de la cadena de muntatge, haurem de revisar que no hi hagi
-        ++inici; //penalitzacions al final
+    if (n == dades.C) { 
+        // Si ja hem arribat a l'últim cotxe de la cadena de muntatge, haurem de revisar que no hi hagi penalitzacions al final
+        ++inici; 
         while (final - inici >= capacitat) {
             contador = 0;
             for (int i = inici; i <= final; ++i) {
@@ -117,53 +119,37 @@ int calcular_cost_millora(int millora, const vector<int>& cotxes_a_millorar)
 // Funció que calcula la penalització total de la permutació, sumant les penalitzacions associades a cadascuna de les millores
 int calcular_cost_afegit(const vector<int>& sol, int n, int max)
 {
-    vector<int> cotxes_a_millorar(n + 1);
+    vector<int> cotxes_a_millorar(n + 1); 
     int penalitzacio_total = 0;
-    for (int i = 0; i < dades.M; ++i) { // per a cada millora, generem un vector que ens indica quins cotxes de la
-        for (int j = 0; j < n + 1; ++j) { // permutació requereixen aquesta millora
+    for (int i = 0; i < dades.M; ++i) {
+        // per a cada millora, generem un vector que ens indica quins cotxes de la permutació requereixen aquesta millora
+        for (int j = 0; j < n + 1; ++j) { 
             if (dades.classes[sol[j]][i] == 1)
                 cotxes_a_millorar[j] = 1;
             else
                 cotxes_a_millorar[j] = 0;
         }
         penalitzacio_total += calcular_cost_millora(i, cotxes_a_millorar);
-        if (penalitzacio_total >= max) // Si la penalització és major que max, això vol dir que el cost de la permutació sobrepassa la mínima penalització, per tant, aquesta solució ja no ens interessa
+        // Si la penalització és major que max, això vol dir que el cost de la permutació sobrepassa la mínima penalització, per tant, aquesta solució ja no ens interessa
+        if (penalitzacio_total >= max) 
             break;
     }
     return penalitzacio_total;
 }
 
+
 void criteri_1(list<int>& candidats, const vector<int>& no_produits)
 {
-/* AIXÒ ES EL QUE HE FET I NS PQ CANVIEN ELS RESULTATS
+    // Posem tots els cotxes que s'han de fabricar de cada classe candidata i trobem el màxim d'aquests:
+    vector<int> cotxes(candidats.size());
     int maxim = 0;
-    for (int x : candidats)
-        if (no_produits[x] > maxim) // Trobem la classe que té més cotxes encara per produïr
+    int u = 0;
+    for (int x : candidats) {
+        cotxes[u] = no_produits[x];
+        if (no_produits[x] > maxim)
             maxim = no_produits[x];
-
-    // Ens quedem només amb les classes que tinguin el màxim nombre de cotxes
-    list<int>::iterator it = candidats.begin();
-    int i = 0;
-    while (it != candidats.end()) {
-        if (no_produits[i] != maxim) {
-            list<int>::iterator aux = it;
-            ++it;
-            candidats.erase(aux);
-        } else
-            ++it;
-        ++i;
+        ++u;
     }
-*/
-    // Posem tots els cotxes que s'han de fabricar de cada classe candidata:
-    vector<int> cotxes;
-    for (int x : candidats)
-        cotxes.push_back(no_produits[x]);
-    // Trobem el mínim:
-    int maxim = 0;
-    for (int x : cotxes)
-        if (x > maxim)
-            maxim = x;
-
     // Trobem totes les classes que no tenen aquest mínim i les traiem de candidats:
     list<int>::iterator it = candidats.begin();
     int i = 0;
@@ -178,42 +164,13 @@ void criteri_1(list<int>& candidats, const vector<int>& no_produits)
     }
 }
 
+
 void criteri_2(list<int>& candidats)
 {
-/*
-    // Posem tots els cotxes que s'han de fabricar de cada classe candidata:
-    vector<int> raons;
-    int minim = 0;
-    for (int x : candidats) {
-        int rao = 0;
-        for (int i = 0; i < dades.M; ++i) {
-            if (dades.classes[x][i] == 0)
-                rao += 1; // si un cotxe no te una millora es el matiex q dir q de cada 1 cotxe pot agafar 1 per aixo sumem 1
-            else {
-                int rao = dades.capacitat_finestra[i] / dades.mida_finestra[i];
-                rao += rao;
-            }
-        }
-        raons.push_back(rao);
-        if (rao < minim)
-            minim = rao;
-    }
-
-    // Ens quedem només amb les classes que tinguin la raó mínima
-    list<int>::iterator it = candidats.begin();
-    int i = 0;
-    while (it != candidats.end()) {
-        if (raons[i] != minim) {
-            list<int>::iterator aux = it;
-            ++it;
-            candidats.erase(aux);
-        } else
-            ++it;
-        ++i;
-    }
-*/
-    // Posem tots els cotxes que s'han de fabricar de cada classe candidata:
-    vector<int> raons;
+    // Posem tots els cotxes que s'han de fabricar de cada classe candidata i trobem el mínim d'aquests:
+    vector<int> raons(candidats.size());
+    int minim = infinit;
+    int u  = 0;
     for (int x : candidats) {
         int rao = 0;
         for (int i = 0; i < dades.M; ++i) {
@@ -224,13 +181,11 @@ void criteri_2(list<int>& candidats)
                 rao += rao;
             }
         }
-        raons.push_back(rao);
+        raons[u] = rao;
+        if (rao < minim)
+            minim = rao;
+        ++u;
     }
-    // Trobem el minim
-    int minim = infinit;
-    for (int x : raons)
-        if (x < minim)
-            minim = x;
     // Trobem totes les classes que no tenen aquest mínim i les traiem de candidats:
     list<int>::iterator it = candidats.begin();
     int i = 0;
@@ -245,11 +200,12 @@ void criteri_2(list<int>& candidats)
     }
 }
 
+
 void criteri_3(list<int>& candidats)
 {
-/*
-    int maxim = 0; // minim o maxim?
+     // Posem el nombre de millores necessàries de cada classe candidata i trobem el mínim d'aquestes:
     vector<int> millores(candidats.size());
+    int minim = infinit;
     int u = 0;
     for (int x : candidats) {
         int num_millores = 0;
@@ -258,39 +214,10 @@ void criteri_3(list<int>& candidats)
                 ++num_millores;
         }
         millores[u] = num_millores;
-        if (num_millores > maxim)
-            maxim = num_millores;
+        if (num_millores < minim)
+            minim = num_millores;
         ++u;
     }
-
-    // Ens quedem només amb les classes que tinguin el màxim nombre de millores
-    list<int>::iterator it = candidats.begin();
-    int i = 0;
-    while (it != candidats.end()) {
-        if (millores[i] != maxim) {
-            list<int>::iterator aux = it;
-            ++it;
-            candidats.erase(aux);
-        } else
-            ++it;
-        ++i;
-    }
-*/
-     // Posem el nombre de millores necessàries de cada classe candidata:
-    vector<int> millores;
-    for (int x : candidats) {
-        int num_millores = 0;
-        for (int i = 0; i < dades.M; ++i) {
-            if (dades.classes[x][i] == 1)
-                ++num_millores;
-        }
-        millores.push_back(num_millores);
-    }
-    // Trobem el mínim:
-    int minim = infinit;
-    for (int x : millores)
-        if (x < minim)
-            minim = x;
     // Trobem totes les classes que no tenen aquest mínim i les treiem de candidats:
     list<int>::iterator it = candidats.begin();
     int i = 0;
@@ -308,13 +235,11 @@ void criteri_3(list<int>& candidats)
 /* Funció que retorna la classe del següent cotxe que haurem de produïr seguint una sèrie de criteris. En cas d'empat en algun criteri entre dues o més classes, passarem al següent criteri:
 
 - Criteri 1: La classe amb major preferència serà aquella que tingui més cotxes encara per fabricar
-- Criteri 2: La classe que tingui la raó més petita (sumatori de quocients entre capacitat i mida de les millores) tindrà
-             preferència
-- Criteri 3: La classe que necessiti més millores tindra major preferència
+- Criteri 2: La classe que tingui la raó més petita (sumatori de quocients entre capacitat i mida de les millores) tindrà preferència
+- Criteri 3: La classe que necessiti menys millores tindra major preferència
 
 Si tenint en compte tots els criteris, encara tenim un empat entre classes, triarem la primera classe de la llista de candidats.
-(L'ordre dels criteris l'hem decidit després de fer diverses proves i comprovar quin ordre ens donava millors resultats globalment)
-*/
+(L'ordre dels criteris l'hem decidit després de fer diverses proves i comprovar quin ordre ens donava millors resultats globalment) */
 int decidir_classe(list<int>& candidats, vector<int> no_produits)
 {
     if (candidats.size() == 1)
@@ -342,8 +267,8 @@ void greedy(char** argv, unsigned t0)
     int penalitzacio_total = 0;
     for (int i = 1; i < dades.C; ++i) {
         vector<int> penalitzacions(dades.K, infinit);
+        // Per els següents cotxes el primer criteri que tenim en compte és la penalització afegida que ens dona cada classe:
         int minim = infinit;
-        // El primer criteri que tenim en compte es la penalització afegida que ens dona cada classe:
         for (int j = 0; j < dades.K; ++j) {
             if (no_produits[j] > 0) {
                 solucio[i] = j;
@@ -352,21 +277,16 @@ void greedy(char** argv, unsigned t0)
                     minim = penalitzacions[j];
             }
         }
-        // // Trobem el mínim:
-        // int minim = infinit;
-        // for (int x : penalitzacions)
-        //     if (x < minim)
-        //         minim = x;
         penalitzacio_total += minim;
 
-        // Guardem en una llista totes les classes que tenen aquest mínim (menys la classe de solucio[i - 1]):
+        // Guardem en una llista totes les classes que tenen aquest mínim (menys la classe de solucio[i - 1] ja que així evitem repeticions de números a la llarga):
         list<int> candidats;
         for (int k = 0; k < dades.K; ++k)
             if (penalitzacions[k] == minim) {
                 if (k != solucio[i - 1])
                     candidats.push_back(k);
             }
-        // Cas en el que només hi ha com a candidat la classe anterior (classe de solucio[i - 1]):
+        // Cas en el que només hi ha com a candidat la classe de la casella anterior (classe de solucio[i - 1]):
         if (candidats.size() == 0)
             solucio[i] = solucio[i - 1];
         // En els altres casos apliquem els 3 criteris que hem aplicat per el primer cotxe:
